@@ -211,10 +211,11 @@ export default function Sidebar() {
   );
 
   const sidebarStyle = {
-    background: 'rgba(5, 8, 22, 0.9)',
-    backdropFilter: 'blur(24px)',
-    WebkitBackdropFilter: 'blur(24px)',
-    borderRight: '1px solid rgba(255,255,255,0.05)',
+    background: 'rgba(255, 255, 255, 0.02)',
+    backdropFilter: 'blur(30px)',
+    WebkitBackdropFilter: 'blur(30px)',
+    borderRight: '1px solid rgba(255,255,255,0.08)',
+    boxShadow: '10px 0 30px rgba(0, 0, 0, 0.1)',
   };
 
   return (
