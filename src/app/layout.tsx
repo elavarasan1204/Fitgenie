@@ -6,6 +6,7 @@ import "./globals.css";
 const inter = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -29,9 +30,12 @@ export default function RootLayout({
           position="top-right"
           toastOptions={{
             style: {
-              background: '#1A1A2E',
-              border: '1px solid #3A3A5C',
-              color: '#EAEAFF',
+              background: 'rgba(14, 20, 40, 0.95)',
+              border: '1px solid rgba(91, 140, 255, 0.2)',
+              color: '#FFFFFF',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '14px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
             },
           }}
           richColors

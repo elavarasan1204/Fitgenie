@@ -7,7 +7,7 @@ import { profileSchema } from '@/validations/profile';
 import { createClient } from '@/lib/supabase/client';
 import { calculateBMI, getBMICategory } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Save, Loader2, Activity } from 'lucide-react';
+import { Save, Loader2, Activity, User, Scale, Target, Utensils, Heart, FileText } from 'lucide-react';
 
 const goalOptions = [
   { value: 'weight_loss', label: 'Weight Loss' },
@@ -50,6 +50,119 @@ interface ProfileFormValues {
   additional_notes?: string | null;
 }
 
+function BMIRing({ bmi }: { bmi: number | null }) {
+  const radius = 54;
+  const circumference = 2 * Math.PI * radius;
+  const maxBmi = 40;
+  const progress = bmi ? Math.min(bmi / maxBmi, 1) : 0;
+  const dashoffset = circumference * (1 - progress);
+
+  const getColor = (b: number) => {
+    if (b < 18.5) return '#22D3EE';
+    if (b < 25) return '#22C55E';
+    if (b < 30) return '#F59E0B';
+    return '#EF4444';
+  };
+
+  const color = bmi ? getColor(bmi) : '#7C849A';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+      <div style={{ position: 'relative', width: '130px', height: '130px' }}>
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          {/* Track */}
+          <circle
+            cx="65" cy="65" r={radius}
+            fill="none"
+            stroke="rgba(255,255,255,0.06)"
+            strokeWidth="8"
+          />
+          {/* Progress */}
+          <circle
+            cx="65" cy="65" r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={dashoffset}
+            transform="rotate(-90 65 65)"
+            style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.5s ease', filter: `drop-shadow(0 0 6px ${color}60)` }}
+          />
+        </svg>
+        {/* Center text */}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          {bmi ? (
+            <>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: color, lineHeight: 1 }}>{bmi}</span>
+              <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#7C849A', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>BMI</span>
+            </>
+          ) : (
+            <>
+              <Activity size={20} style={{ color: '#7C849A' }} />
+              <span style={{ fontSize: '0.6rem', color: '#7C849A', marginTop: '4px' }}>BMI</span>
+            </>
+          )}
+        </div>
+      </div>
+      {bmi && (
+        <div
+          style={{
+            padding: '4px 14px',
+            borderRadius: '20px',
+            background: `${color}18`,
+            border: `1px solid ${color}30`,
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: color,
+            letterSpacing: '0.04em',
+          }}
+        >
+          {getBMICategory(bmi)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const sectionStyle = {
+  background: 'rgba(14, 20, 40, 0.6)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  borderRadius: '20px',
+  padding: '28px',
+  position: 'relative' as const,
+  overflow: 'hidden' as const,
+};
+
+function SectionHeader({ number, icon: Icon, title }: { number: number; icon: React.ElementType; title: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-6">
+      <div
+        style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '10px',
+          background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          boxShadow: '0 4px 14px rgba(91,140,255,0.3)',
+        }}
+      >
+        <Icon size={15} className="text-white" />
+      </div>
+      <div>
+        <p style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7C849A' }}>
+          Step {number}
+        </p>
+        <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', marginTop: '1px' }}>{title}</h2>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -70,19 +183,16 @@ export default function ProfilePage() {
   const selectedGoal = watch('goal');
   const selectedDiet = watch('diet_preference');
 
-  // Auto-calculate BMI
   useEffect(() => {
     const h = Number(heightCm);
     const w = Number(weightKg);
     if (h > 0 && w > 0) {
-      const calculatedBmi = calculateBMI(h, w);
-      setBmi(calculatedBmi);
+      setBmi(calculateBMI(h, w));
     } else {
       setBmi(null);
     }
   }, [heightCm, weightKg]);
 
-  // Load existing profile
   useEffect(() => {
     const loadProfile = async () => {
       const supabase = createClient();
@@ -153,7 +263,24 @@ export default function ProfilePage() {
   if (fetching) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={32} className="animate-spin text-[var(--color-primary)]" />
+        <div style={{ textAlign: 'center' }}>
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px',
+              boxShadow: '0 8px 24px rgba(91,140,255,0.3)',
+            }}
+          >
+            <Loader2 size={22} className="animate-spin text-white" />
+          </div>
+          <p style={{ color: '#7C849A', fontSize: '0.875rem' }}>Loading your profile...</p>
+        </div>
       </div>
     );
   }
@@ -161,19 +288,18 @@ export default function ProfilePage() {
   return (
     <div className="max-w-3xl mx-auto animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">Your Profile</h1>
-        <p className="text-[var(--color-text-secondary)]">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2 tracking-tight" style={{ color: '#FFFFFF' }}>
+          Your Profile
+        </h1>
+        <p className="text-sm" style={{ color: '#7C849A' }}>
           Complete your profile to get personalized AI fitness plans.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {/* Personal Information */}
-        <div className="glass-card p-6" style={{ transform: 'none' }}>
-          <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-xs text-white">1</span>
-            Personal Information
-          </h2>
+        <div style={sectionStyle}>
+          <SectionHeader number={1} icon={User} title="Personal Information" />
           <div className="grid md:grid-cols-3 gap-5">
             <div className="md:col-span-2">
               <label htmlFor="full_name" className="input-label">Full Name</label>
@@ -198,12 +324,9 @@ export default function ProfilePage() {
         </div>
 
         {/* Body Metrics */}
-        <div className="glass-card p-6" style={{ transform: 'none' }}>
-          <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-xs text-white">2</span>
-            Body Metrics
-          </h2>
-          <div className="grid md:grid-cols-3 gap-5">
+        <div style={sectionStyle}>
+          <SectionHeader number={2} icon={Scale} title="Body Metrics" />
+          <div className="grid md:grid-cols-3 gap-5 items-start">
             <div>
               <label htmlFor="height_cm" className="input-label">Height (cm)</label>
               <input {...register('height_cm')} id="height_cm" type="number" step="0.1" className={`input-field ${errors.height_cm ? 'input-error' : ''}`} placeholder="170" />
@@ -214,29 +337,16 @@ export default function ProfilePage() {
               <input {...register('weight_kg')} id="weight_kg" type="number" step="0.1" className={`input-field ${errors.weight_kg ? 'input-error' : ''}`} placeholder="70" />
               {errors.weight_kg && <p className="error-message">{errors.weight_kg.message}</p>}
             </div>
-            <div>
-              <label className="input-label">BMI (Auto-calculated)</label>
-              <div className="input-field flex items-center gap-2" style={{ background: 'var(--color-surface-light)' }}>
-                <Activity size={16} className="text-[var(--color-secondary)]" />
-                {bmi ? (
-                  <span>
-                    <strong>{bmi}</strong>
-                    <span className="text-xs text-[var(--color-text-muted)] ml-2">({getBMICategory(bmi)})</span>
-                  </span>
-                ) : (
-                  <span className="text-[var(--color-text-muted)]">Enter height & weight</span>
-                )}
-              </div>
+            <div className="flex flex-col items-center pt-1">
+              <p className="input-label mb-3 self-start">BMI (Auto-calculated)</p>
+              <BMIRing bmi={bmi} />
             </div>
           </div>
         </div>
 
-        {/* Goal Selection */}
-        <div className="glass-card p-6" style={{ transform: 'none' }}>
-          <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-xs text-white">3</span>
-            Fitness Goal
-          </h2>
+        {/* Fitness Goal */}
+        <div style={sectionStyle}>
+          <SectionHeader number={3} icon={Target} title="Fitness Goal" />
           <div className="grid md:grid-cols-2 gap-5">
             <div>
               <label htmlFor="goal" className="input-label">Goal</label>
@@ -257,27 +367,19 @@ export default function ProfilePage() {
         </div>
 
         {/* Activity Level */}
-        <div className="glass-card p-6" style={{ transform: 'none' }}>
-          <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-xs text-white">4</span>
-            Activity Level
-          </h2>
-          <div>
-            <select {...register('activity_level')} id="activity_level" className="select-field">
-              <option value="">Select Activity Level</option>
-              {activityLevels.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
+        <div style={sectionStyle}>
+          <SectionHeader number={4} icon={Activity} title="Activity Level" />
+          <select {...register('activity_level')} id="activity_level" className="select-field">
+            <option value="">Select Activity Level</option>
+            {activityLevels.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Diet Preference */}
-        <div className="glass-card p-6" style={{ transform: 'none' }}>
-          <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-xs text-white">5</span>
-            Diet Preference
-          </h2>
+        <div style={sectionStyle}>
+          <SectionHeader number={5} icon={Utensils} title="Diet Preference" />
           <div className="grid md:grid-cols-2 gap-5">
             <div>
               <select {...register('diet_preference')} id="diet_preference" className="select-field">
@@ -297,11 +399,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Medical & Notes */}
-        <div className="glass-card p-6" style={{ transform: 'none' }}>
-          <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center text-xs text-white">6</span>
-            Medical & Notes
-          </h2>
+        <div style={sectionStyle}>
+          <SectionHeader number={6} icon={Heart} title="Medical & Notes" />
           <div className="space-y-5">
             <div>
               <label htmlFor="medical_conditions" className="input-label">Medical Conditions</label>
@@ -315,7 +414,12 @@ export default function ProfilePage() {
         </div>
 
         {/* Submit */}
-        <button type="submit" disabled={loading} className="btn-primary w-full justify-center !py-4 text-base">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary w-full justify-center"
+          style={{ padding: '16px 28px', fontSize: '0.95rem' }}
+        >
           {loading ? (
             <Loader2 size={20} className="animate-spin" />
           ) : (

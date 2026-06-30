@@ -14,8 +14,30 @@ import {
 } from 'recharts';
 import {
   Plus, Loader2, Scale, Droplets, Dumbbell, TrendingUp,
-  CalendarDays, Activity,
+  CalendarDays, Activity, X,
 } from 'lucide-react';
+
+const cardStyle = {
+  background: 'rgba(14, 20, 40, 0.6)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  borderRadius: '20px',
+  padding: '24px',
+  position: 'relative' as const,
+  overflow: 'hidden' as const,
+};
+
+const tooltipStyle = {
+  contentStyle: {
+    background: 'rgba(14, 20, 40, 0.95)',
+    border: '1px solid rgba(91,140,255,0.2)',
+    borderRadius: '12px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+    fontSize: '0.75rem',
+    color: '#FFFFFF',
+  },
+  labelStyle: { color: '#B8C0D4' },
+};
 
 export default function ProgressPage() {
   const [logs, setLogs] = useState<ProgressLog[]>([]);
@@ -42,7 +64,6 @@ export default function ProgressPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Get profile for height
     const { data: profile } = await supabase
       .from('profiles')
       .select('height_cm')
@@ -61,9 +82,7 @@ export default function ProgressPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
   const onSubmit = async (data: ProgressLogFormData) => {
     setSaving(true);
@@ -83,10 +102,7 @@ export default function ProgressPage() {
           workout_notes: data.workout_notes || null,
         }, { onConflict: 'user_id,log_date' });
 
-      if (error) {
-        toast.error('Failed to save log');
-        return;
-      }
+      if (error) { toast.error('Failed to save log'); return; }
 
       toast.success('Progress logged! 📊');
       reset();
@@ -145,71 +161,177 @@ export default function ProgressPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={32} className="animate-spin text-[var(--color-primary)]" />
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 8px 24px rgba(91,140,255,0.3)' }}>
+            <Loader2 size={22} className="animate-spin text-white" />
+          </div>
+          <p style={{ color: '#7C849A', fontSize: '0.875rem' }}>Loading your progress...</p>
+        </div>
       </div>
     );
   }
+
+  const summaryStats = [
+    {
+      label: 'Latest Weight',
+      value: weightData.length > 0 ? `${weightData[weightData.length - 1].weight} kg` : '—',
+      icon: Scale,
+      gradient: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)',
+      glow: 'rgba(91,140,255,0.25)',
+    },
+    {
+      label: 'Current BMI',
+      value: bmiData.length > 0 ? bmiData[bmiData.length - 1].bmi : '—',
+      icon: Activity,
+      gradient: 'linear-gradient(135deg, #22D3EE 0%, #5B8CFF 100%)',
+      glow: 'rgba(34,211,238,0.25)',
+    },
+    {
+      label: 'Last Water Intake',
+      value: waterData.length > 0 ? `${waterData[waterData.length - 1].water} ml` : '—',
+      icon: Droplets,
+      gradient: 'linear-gradient(135deg, #22C55E 0%, #22D3EE 100%)',
+      glow: 'rgba(34,197,94,0.25)',
+    },
+    {
+      label: 'Completion Rate',
+      value: `${workoutData.rate}%`,
+      icon: TrendingUp,
+      gradient: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)',
+      glow: 'rgba(245,158,11,0.25)',
+    },
+  ];
 
   return (
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Progress Tracking</h1>
-          <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-            {logs.length} entries logged
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>
+            Progress Tracking
+          </h1>
+          <p className="text-sm mt-1.5" style={{ color: '#7C849A' }}>
+            {logs.length} {logs.length === 1 ? 'entry' : 'entries'} logged · Stay consistent!
           </p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          <Plus size={18} /> Log Progress
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="btn-primary"
+        >
+          {showForm ? <X size={18} /> : <Plus size={18} />}
+          {showForm ? 'Cancel' : 'Log Progress'}
         </button>
       </div>
 
       {/* Log Form */}
       {showForm && (
-        <div className="glass-card p-6 mb-8 animate-fade-in-up" style={{ transform: 'none' }}>
-          <h2 className="text-lg font-semibold mb-5">📝 Log Today&apos;s Progress</h2>
+        <div
+          className="mb-8 animate-scale-in"
+          style={{
+            background: 'rgba(14, 20, 40, 0.7)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(91,140,255,0.15)',
+            borderRadius: '20px',
+            padding: '28px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Top gradient accent */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)' }} />
+
+          <h2 className="text-base font-bold mb-6 flex items-center gap-2" style={{ color: '#FFFFFF' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(91,140,255,0.3)' }}>
+              <Plus size={14} className="text-white" />
+            </div>
+            Log Today&apos;s Progress
+          </h2>
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
               <div>
                 <label htmlFor="log_date" className="input-label">
-                  <CalendarDays size={14} className="inline mr-1" /> Date
+                  <CalendarDays size={12} className="inline mr-1.5" /> Date
                 </label>
-                <input {...register('log_date')} id="log_date" type="date" className={`input-field ${errors.log_date ? 'input-error' : ''}`} />
+                <input
+                  {...register('log_date')}
+                  id="log_date"
+                  type="date"
+                  className={`input-field ${errors.log_date ? 'input-error' : ''}`}
+                />
                 {errors.log_date && <p className="error-message">{errors.log_date.message}</p>}
               </div>
+
               <div>
                 <label htmlFor="weight_kg" className="input-label">
-                  <Scale size={14} className="inline mr-1" /> Weight (kg)
+                  <Scale size={12} className="inline mr-1.5" /> Weight (kg)
                 </label>
-                <input {...register('weight_kg')} id="weight_kg" type="number" step="0.1" className="input-field" placeholder="70.5" />
+                <input
+                  {...register('weight_kg')}
+                  id="weight_kg"
+                  type="number"
+                  step="0.1"
+                  className="input-field"
+                  placeholder="70.5"
+                />
               </div>
+
               <div>
                 <label htmlFor="water_ml" className="input-label">
-                  <Droplets size={14} className="inline mr-1" /> Water (ml)
+                  <Droplets size={12} className="inline mr-1.5" /> Water (ml)
                 </label>
-                <input {...register('water_ml')} id="water_ml" type="number" className="input-field" placeholder="2500" />
+                <input
+                  {...register('water_ml')}
+                  id="water_ml"
+                  type="number"
+                  className="input-field"
+                  placeholder="2500"
+                />
               </div>
+
               <div>
                 <label className="input-label">
-                  <Dumbbell size={14} className="inline mr-1" /> Workout
+                  <Dumbbell size={12} className="inline mr-1.5" /> Workout
                 </label>
-                <label className="flex items-center gap-3 mt-3 cursor-pointer">
-                  <input {...register('workout_completed')} type="checkbox" className="w-5 h-5 rounded accent-[var(--color-primary)]" />
-                  <span className="text-sm">Completed today</span>
+                <label
+                  className="flex items-center gap-3 mt-2.5 cursor-pointer"
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '14px',
+                    background: 'rgba(14,20,40,0.8)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <input
+                    {...register('workout_completed')}
+                    type="checkbox"
+                    className="w-4 h-4 rounded"
+                    style={{ accentColor: '#5B8CFF' }}
+                  />
+                  <span className="text-sm" style={{ color: '#B8C0D4' }}>Completed today</span>
                 </label>
               </div>
             </div>
+
             <div>
               <label htmlFor="workout_notes" className="input-label">Notes (optional)</label>
-              <textarea {...register('workout_notes')} id="workout_notes" className="textarea-field" placeholder="How was your workout?" rows={2} />
+              <textarea
+                {...register('workout_notes')}
+                id="workout_notes"
+                className="textarea-field"
+                placeholder="How was your workout? Any notes..."
+                rows={2}
+              />
             </div>
+
             <div className="flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                 Save Log
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
+              <button type="button" onClick={() => setShowForm(false)} className="btn-ghost">
+                Cancel
+              </button>
             </div>
           </form>
         </div>
@@ -217,53 +339,109 @@ export default function ProgressPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="glass-card p-4 text-center">
-          <Scale size={20} className="text-[var(--color-primary-light)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{weightData.length > 0 ? `${weightData[weightData.length - 1].weight} kg` : '—'}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">Latest Weight</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <Activity size={20} className="text-[var(--color-secondary)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{bmiData.length > 0 ? bmiData[bmiData.length - 1].bmi : '—'}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">Current BMI</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <Droplets size={20} className="text-[var(--color-success)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{waterData.length > 0 ? `${waterData[waterData.length - 1].water} ml` : '—'}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">Last Water Intake</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <TrendingUp size={20} className="text-[var(--color-accent)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{workoutData.rate}%</div>
-          <div className="text-xs text-[var(--color-text-muted)]">Completion Rate</div>
-        </div>
+        {summaryStats.map((stat) => (
+          <div
+            key={stat.label}
+            style={{
+              background: 'rgba(14, 20, 40, 0.6)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '18px',
+              padding: '18px',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.transform = 'translateY(-2px)';
+              el.style.borderColor = 'rgba(91,140,255,0.15)';
+              el.style.boxShadow = `0 12px 36px rgba(0,0,0,0.3), 0 0 20px ${stat.glow}`;
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLElement;
+              el.style.transform = '';
+              el.style.borderColor = 'rgba(255,255,255,0.07)';
+              el.style.boxShadow = '';
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '11px',
+                background: stat.gradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '12px',
+                boxShadow: `0 6px 18px ${stat.glow}`,
+              }}
+            >
+              <stat.icon size={17} className="text-white" />
+            </div>
+            <p className="text-xl font-bold" style={{ color: '#FFFFFF' }}>{stat.value}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#7C849A' }}>{stat.label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Charts */}
       {logs.length === 0 ? (
-        <div className="glass-card p-12 text-center" style={{ transform: 'none' }}>
-          <TrendingUp size={48} className="text-[var(--color-text-muted)] mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No data yet</h3>
-          <p className="text-sm text-[var(--color-text-secondary)]">Start logging your progress to see beautiful charts here.</p>
+        <div
+          style={{
+            ...cardStyle,
+            textAlign: 'center',
+            padding: '64px 24px',
+          }}
+        >
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '20px',
+              background: 'rgba(91,140,255,0.08)',
+              border: '1px solid rgba(91,140,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <TrendingUp size={28} style={{ color: '#7C849A' }} />
+          </div>
+          <h3 className="text-lg font-bold mb-2" style={{ color: '#FFFFFF' }}>No data yet</h3>
+          <p className="text-sm mb-6" style={{ color: '#B8C0D4' }}>
+            Start logging your progress to see beautiful charts here.
+          </p>
+          <button onClick={() => setShowForm(true)} className="btn-primary">
+            <Plus size={16} /> Log First Entry
+          </button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           {/* Weight Trend */}
           {weightData.length > 0 && (
-            <div className="chart-container">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Scale size={16} className="text-[var(--color-primary-light)]" /> Weight Trend
+            <div style={cardStyle}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #5B8CFF, #7B61FF)' }} />
+              <h3 className="font-semibold mb-5 flex items-center gap-2" style={{ color: '#FFFFFF' }}>
+                <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(91,140,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Scale size={13} style={{ color: '#7BA7FF' }} />
+                </div>
+                Weight Trend
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={weightData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
-                  <Tooltip
-                    contentStyle={{ background: '#1A1A2E', border: '1px solid #3A3A5C', borderRadius: 12, fontSize: 12 }}
-                    labelStyle={{ color: '#EAEAFF' }}
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#7C849A' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#7C849A' }} domain={['auto', 'auto']} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Line
+                    type="monotone"
+                    dataKey="weight"
+                    stroke="#5B8CFF"
+                    strokeWidth={2.5}
+                    dot={{ fill: '#5B8CFF', r: 4, strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: '#7BA7FF', strokeWidth: 0 }}
                   />
-                  <Line type="monotone" dataKey="weight" stroke="#6C63FF" strokeWidth={2} dot={{ fill: '#6C63FF', r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -271,26 +449,27 @@ export default function ProgressPage() {
 
           {/* BMI Trend */}
           {bmiData.length > 0 && (
-            <div className="chart-container">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Activity size={16} className="text-[var(--color-secondary)]" /> BMI Trend
+            <div style={cardStyle}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #22D3EE, #5B8CFF)' }} />
+              <h3 className="font-semibold mb-5 flex items-center gap-2" style={{ color: '#FFFFFF' }}>
+                <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(34,211,238,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Activity size={13} style={{ color: '#22D3EE' }} />
+                </div>
+                BMI Trend
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={bmiData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
-                  <Tooltip
-                    contentStyle={{ background: '#1A1A2E', border: '1px solid #3A3A5C', borderRadius: 12, fontSize: 12 }}
-                    labelStyle={{ color: '#EAEAFF' }}
-                  />
                   <defs>
                     <linearGradient id="bmiGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#00D9FF" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="#00D9FF" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#22D3EE" stopOpacity={0.25} />
+                      <stop offset="100%" stopColor="#22D3EE" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <Area type="monotone" dataKey="bmi" stroke="#00D9FF" strokeWidth={2} fill="url(#bmiGradient)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#7C849A' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#7C849A' }} domain={['auto', 'auto']} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} />
+                  <Area type="monotone" dataKey="bmi" stroke="#22D3EE" strokeWidth={2.5} fill="url(#bmiGradient)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -298,20 +477,27 @@ export default function ProgressPage() {
 
           {/* Water Intake */}
           {waterData.length > 0 && (
-            <div className="chart-container">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Droplets size={16} className="text-[var(--color-success)]" /> Water Intake
+            <div style={cardStyle}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #22C55E, #22D3EE)' }} />
+              <h3 className="font-semibold mb-5 flex items-center gap-2" style={{ color: '#FFFFFF' }}>
+                <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(34,197,94,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Droplets size={13} style={{ color: '#22C55E' }} />
+                </div>
+                Water Intake
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={waterData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    contentStyle={{ background: '#1A1A2E', border: '1px solid #3A3A5C', borderRadius: 12, fontSize: 12 }}
-                    labelStyle={{ color: '#EAEAFF' }}
-                  />
-                  <Bar dataKey="water" fill="#10B981" radius={[6, 6, 0, 0]} />
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={waterData} barSize={28}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#7C849A' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#7C849A' }} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} formatter={(v: any) => [`${v} ml`, 'Water']} />
+                  <defs>
+                    <linearGradient id="waterGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22C55E" />
+                      <stop offset="100%" stopColor="#22D3EE" />
+                    </linearGradient>
+                  </defs>
+                  <Bar dataKey="water" fill="url(#waterGradient)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -319,21 +505,28 @@ export default function ProgressPage() {
 
           {/* Workout Completion */}
           {workoutData.weekly.length > 0 && (
-            <div className="chart-container">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Dumbbell size={16} className="text-[var(--color-accent)]" /> Workout Completion
+            <div style={cardStyle}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #F59E0B, #EF4444)' }} />
+              <h3 className="font-semibold mb-5 flex items-center gap-2" style={{ color: '#FFFFFF' }}>
+                <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Dumbbell size={13} style={{ color: '#F59E0B' }} />
+                </div>
+                Workout Completion
+                <span className="badge badge-warning ml-auto">{workoutData.rate}%</span>
               </h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={workoutData.weekly}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} domain={[0, 100]} />
-                  <Tooltip
-                    contentStyle={{ background: '#1A1A2E', border: '1px solid #3A3A5C', borderRadius: 12, fontSize: 12 }}
-                    labelStyle={{ color: '#EAEAFF' }}
-                    formatter={(value: any) => [`${value}%`, 'Completion']}
-                  />
-                  <Bar dataKey="rate" fill="#FF6B9D" radius={[6, 6, 0, 0]} />
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={workoutData.weekly} barSize={36}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#7C849A' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#7C849A' }} domain={[0, 100]} axisLine={false} tickLine={false} />
+                  <Tooltip {...tooltipStyle} formatter={(value: any) => [`${value}%`, 'Completion']} />
+                  <defs>
+                    <linearGradient id="workoutGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#F59E0B" />
+                      <stop offset="100%" stopColor="#EF4444" />
+                    </linearGradient>
+                  </defs>
+                  <Bar dataKey="rate" fill="url(#workoutGradient)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

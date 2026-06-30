@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, HelpCircle } from 'lucide-react';
 
 const faqs = [
   {
@@ -34,16 +34,33 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="relative py-24 md:py-32">
+    <section id="faq" className="relative py-28 md:py-36">
+      <div
+        className="floating-orb floating-orb-cyan"
+        style={{ width: '400px', height: '400px', top: '10%', left: '-100px', opacity: 0.06, filter: 'blur(80px)' }}
+      />
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <span className="badge badge-warning text-xs uppercase tracking-wider mb-4 inline-block">FAQ</span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="section-badge inline-flex mb-6">
+            <HelpCircle size={12} />
+            FAQ
+          </div>
+          <h2 className="text-3xl md:text-5xl font-bold mb-5 tracking-tight">
             Frequently Asked
-            <span className="gradient-text"> Questions</span>
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {' '}Questions
+            </span>
           </h2>
-          <p className="text-[var(--color-text-secondary)]">
+          <p className="text-lg" style={{ color: '#B8C0D4' }}>
             Got questions? We&apos;ve got answers.
           </p>
         </div>
@@ -53,31 +70,69 @@ export default function FAQ() {
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="glass-card overflow-hidden"
-              style={{ transform: 'none' }}
+              style={{
+                background: 'rgba(14, 20, 40, 0.6)',
+                backdropFilter: 'blur(20px)',
+                border: `1px solid ${openIndex === index ? 'rgba(91, 140, 255, 0.25)' : 'rgba(255,255,255,0.07)'}`,
+                borderRadius: '16px',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+                boxShadow: openIndex === index ? '0 8px 32px rgba(91,140,255,0.08)' : 'none',
+              }}
             >
               <button
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full flex items-center justify-between p-5 text-left hover:bg-[var(--color-surface-light)]/30 transition-colors"
-              >
-                <span className="font-medium pr-4">{faq.question}</span>
-                <ChevronDown
-                  size={20}
-                  className={`flex-shrink-0 text-[var(--color-text-muted)] transition-transform duration-300 ${
-                    openIndex === index ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              <div
-                className="overflow-hidden transition-all duration-300"
-                style={{
-                  maxHeight: openIndex === index ? '300px' : '0',
-                  opacity: openIndex === index ? 1 : 0,
+                className="w-full flex items-center justify-between p-5 text-left transition-colors"
+                style={{ background: 'transparent' }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(91,140,255,0.04)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = 'transparent';
                 }}
               >
-                <p className="px-5 pb-5 text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                  {faq.answer}
-                </p>
+                <span className="font-semibold pr-4 text-sm md:text-base" style={{ color: '#FFFFFF' }}>
+                  {faq.question}
+                </span>
+                <div
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '8px',
+                    background: openIndex === index ? 'rgba(91,140,255,0.15)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${openIndex === index ? 'rgba(91,140,255,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'all 0.3s',
+                  }}
+                >
+                  <ChevronDown
+                    size={15}
+                    style={{
+                      color: openIndex === index ? '#7BA7FF' : '#7C849A',
+                      transform: openIndex === index ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s ease, color 0.3s ease',
+                    }}
+                  />
+                </div>
+              </button>
+
+              <div
+                style={{
+                  maxHeight: openIndex === index ? '400px' : '0',
+                  overflow: 'hidden',
+                  transition: 'max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  opacity: openIndex === index ? 1 : 0,
+                  transitionProperty: 'max-height, opacity',
+                }}
+              >
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <p className="px-5 py-4 text-sm leading-relaxed" style={{ color: '#B8C0D4' }}>
+                    {faq.answer}
+                  </p>
+                </div>
               </div>
             </div>
           ))}

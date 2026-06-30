@@ -24,6 +24,14 @@ import {
   Apple,
 } from 'lucide-react';
 
+const cardStyle = {
+  background: 'rgba(14, 20, 40, 0.6)',
+  backdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255,255,255,0.07)',
+  borderRadius: '20px',
+  padding: '24px',
+};
+
 export default function FitnessPlanPage() {
   const [plan, setPlan] = useState<FitnessPlan | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,9 +58,7 @@ export default function FitnessPlanPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    fetchPlan();
-  }, [fetchPlan]);
+  useEffect(() => { fetchPlan(); }, [fetchPlan]);
 
   const generatePlan = async () => {
     setGenerating(true);
@@ -77,8 +83,6 @@ export default function FitnessPlanPage() {
     setApplyingMod(true);
     try {
       const updatedPlanData = { ...plan.plan_data as FitnessPlanData };
-
-      // Apply each modification
       for (const mod of modifications) {
         const key = mod.section as keyof FitnessPlanData;
         if (key in updatedPlanData) {
@@ -89,17 +93,11 @@ export default function FitnessPlanPage() {
       const res = await fetch('/api/fitness-plan/modify', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan_id: plan.id,
-          updated_plan_data: updatedPlanData,
-        }),
+        body: JSON.stringify({ plan_id: plan.id, updated_plan_data: updatedPlanData }),
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Failed to apply changes');
-        return;
-      }
+      if (!res.ok) { toast.error(data.error || 'Failed to apply changes'); return; }
 
       setPlan(data.plan);
       setShowModModal(false);
@@ -115,23 +113,47 @@ export default function FitnessPlanPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={32} className="animate-spin text-[var(--color-primary)]" />
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', boxShadow: '0 8px 24px rgba(91,140,255,0.3)' }}>
+            <Loader2 size={22} className="animate-spin text-white" />
+          </div>
+          <p style={{ color: '#7C849A', fontSize: '0.875rem' }}>Loading your plan...</p>
+        </div>
       </div>
     );
   }
 
-  // No plan yet - show generate button
   if (!plan) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in-up">
-        <div className="w-24 h-24 rounded-3xl gradient-primary flex items-center justify-center mb-6 animate-pulse-glow">
-          <Sparkles size={40} className="text-white" />
+        <div
+          style={{
+            width: '100px',
+            height: '100px',
+            borderRadius: '28px',
+            background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '28px',
+            boxShadow: '0 16px 48px rgba(91,140,255,0.35)',
+          }}
+          className="animate-pulse-glow"
+        >
+          <Sparkles size={44} className="text-white" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold mb-3">Generate Your AI Fitness Plan</h1>
-        <p className="text-[var(--color-text-secondary)] max-w-md mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight" style={{ color: '#FFFFFF' }}>
+          Generate Your AI Fitness Plan
+        </h1>
+        <p className="max-w-md mb-8 leading-relaxed" style={{ color: '#B8C0D4' }}>
           Complete your profile first, then let AI create a personalized workout and nutrition plan just for you.
         </p>
-        <button onClick={generatePlan} disabled={generating} className="btn-primary !py-4 !px-8 text-base">
+        <button
+          onClick={generatePlan}
+          disabled={generating}
+          className="btn-primary"
+          style={{ padding: '16px 36px', fontSize: '1rem' }}
+        >
           {generating ? (
             <>
               <Loader2 size={20} className="animate-spin" />
@@ -152,7 +174,7 @@ export default function FitnessPlanPage() {
 
   const sections = [
     { key: 'overview', label: 'Overview', icon: Activity },
-    { key: 'workout', label: 'Workout Schedule', icon: Calendar },
+    { key: 'workout', label: 'Workout', icon: Calendar },
     { key: 'breakfast', label: 'Breakfast', icon: Coffee },
     { key: 'lunch', label: 'Lunch', icon: Utensils },
     { key: 'dinner', label: 'Dinner', icon: Moon },
@@ -160,17 +182,28 @@ export default function FitnessPlanPage() {
     { key: 'recovery', label: 'Recovery', icon: Heart },
   ];
 
+  const planStats = [
+    { label: 'Calories/day', value: planData.daily_calorie_target, icon: Flame, gradient: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)', glow: 'rgba(245,158,11,0.25)' },
+    { label: 'Water (ml/day)', value: planData.water_intake_target, icon: Droplets, gradient: 'linear-gradient(135deg, #22D3EE 0%, #5B8CFF 100%)', glow: 'rgba(34,211,238,0.25)' },
+    { label: 'Workout days', value: planData.weekly_workout_schedule?.filter(d => !d.rest_day).length || 0, icon: Dumbbell, gradient: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)', glow: 'rgba(91,140,255,0.25)' },
+    { label: 'Rest days', value: planData.weekly_workout_schedule?.filter(d => d.rest_day).length || 0, icon: Heart, gradient: 'linear-gradient(135deg, #22C55E 0%, #22D3EE 100%)', glow: 'rgba(34,197,94,0.25)' },
+  ];
+
   return (
     <div className="animate-fade-in-up">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Your Fitness Plan</h1>
-          <p className="text-[var(--color-text-secondary)] text-sm mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Your Fitness Plan</h1>
+          <p className="text-sm mt-1.5" style={{ color: '#7C849A' }}>
             Version {plan.version} · Generated {new Date(plan.created_at).toLocaleDateString()}
           </p>
         </div>
-        <button onClick={generatePlan} disabled={generating} className="btn-secondary">
+        <button
+          onClick={generatePlan}
+          disabled={generating}
+          className="btn-secondary"
+        >
           {generating ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
           Regenerate Plan
         </button>
@@ -178,69 +211,94 @@ export default function FitnessPlanPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="glass-card p-4 text-center">
-          <Flame size={20} className="text-[var(--color-accent)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{planData.daily_calorie_target}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">kcal/day</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <Droplets size={20} className="text-[var(--color-secondary)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{planData.water_intake_target}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">ml water/day</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <Dumbbell size={20} className="text-[var(--color-primary-light)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{planData.weekly_workout_schedule?.filter(d => !d.rest_day).length || 0}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">workout days</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <Heart size={20} className="text-[var(--color-success)] mx-auto mb-2" />
-          <div className="text-xl font-bold">{planData.weekly_workout_schedule?.filter(d => d.rest_day).length || 0}</div>
-          <div className="text-xs text-[var(--color-text-muted)]">rest days</div>
-        </div>
+        {planStats.map((stat) => (
+          <div
+            key={stat.label}
+            style={{
+              background: 'rgba(14, 20, 40, 0.6)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '18px',
+              padding: '18px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '11px',
+                background: stat.gradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 10px',
+                boxShadow: `0 6px 18px ${stat.glow}`,
+              }}
+            >
+              <stat.icon size={17} className="text-white" />
+            </div>
+            <div className="text-xl font-bold" style={{ color: '#FFFFFF' }}>{stat.value}</div>
+            <div className="text-xs mt-0.5" style={{ color: '#7C849A' }}>{stat.label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Sections Navigation */}
+      {/* Section Navigation */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
-        {sections.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => setActiveSection(activeSection === s.key ? null : s.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              activeSection === s.key
-                ? 'gradient-primary text-white'
-                : 'glass text-[var(--color-text-secondary)] hover:text-white'
-            }`}
-          >
-            <s.icon size={16} />
-            {s.label}
-          </button>
-        ))}
+        {sections.map((s) => {
+          const active = activeSection === s.key;
+          return (
+            <button
+              key={s.key}
+              onClick={() => setActiveSection(activeSection === s.key ? null : s.key)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '12px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                background: active ? 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)' : 'rgba(14,20,40,0.6)',
+                border: active ? '1px solid transparent' : '1px solid rgba(255,255,255,0.07)',
+                color: active ? '#FFFFFF' : '#7C849A',
+                boxShadow: active ? '0 4px 16px rgba(91,140,255,0.3)' : 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <s.icon size={14} />
+              {s.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Section Content */}
       <div className="space-y-4">
         {activeSection === 'overview' && (
           <div className="space-y-4 animate-fade-in-up">
-            <div className="glass-card p-6" style={{ transform: 'none' }}>
-              <h3 className="font-semibold mb-2">👤 User Summary</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{planData.user_summary}</p>
-            </div>
-            <div className="glass-card p-6" style={{ transform: 'none' }}>
-              <h3 className="font-semibold mb-2">🎯 Goal Summary</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{planData.goal_summary}</p>
-            </div>
-            <div className="glass-card p-6" style={{ transform: 'none' }}>
-              <h3 className="font-semibold mb-2">📊 BMI Analysis</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">{planData.bmi_analysis}</p>
-            </div>
+            {[
+              { title: '👤 User Summary', content: planData.user_summary },
+              { title: '🎯 Goal Summary', content: planData.goal_summary },
+              { title: '📊 BMI Analysis', content: planData.bmi_analysis },
+            ].map((item) => (
+              <div key={item.title} style={cardStyle}>
+                <h3 className="font-semibold mb-3" style={{ color: '#FFFFFF' }}>{item.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#B8C0D4' }}>{item.content}</p>
+              </div>
+            ))}
             {planData.exercise_recommendations && (
-              <div className="glass-card p-6" style={{ transform: 'none' }}>
-                <h3 className="font-semibold mb-3">💡 Exercise Recommendations</h3>
-                <ul className="space-y-2">
+              <div style={cardStyle}>
+                <h3 className="font-semibold mb-4" style={{ color: '#FFFFFF' }}>💡 Exercise Recommendations</h3>
+                <ul className="space-y-2.5">
                   {planData.exercise_recommendations.map((rec, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
-                      <Check size={14} className="text-[var(--color-success)] mt-0.5 flex-shrink-0" />
+                    <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: '#B8C0D4' }}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '6px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                        <Check size={11} style={{ color: '#22C55E' }} />
+                      </div>
                       {rec}
                     </li>
                   ))}
@@ -259,24 +317,37 @@ export default function FitnessPlanPage() {
         )}
 
         {activeSection === 'breakfast' && planData.breakfast_plan && (
-          <MealCard meal={planData.breakfast_plan} title="Breakfast Plan" emoji="🌅" />
+          <MealCard meal={planData.breakfast_plan} title="Breakfast Plan" emoji="🌅" color="#F59E0B" />
         )}
-
         {activeSection === 'lunch' && planData.lunch_plan && (
-          <MealCard meal={planData.lunch_plan} title="Lunch Plan" emoji="☀️" />
+          <MealCard meal={planData.lunch_plan} title="Lunch Plan" emoji="☀️" color="#22D3EE" />
         )}
-
         {activeSection === 'dinner' && planData.dinner_plan && (
-          <MealCard meal={planData.dinner_plan} title="Dinner Plan" emoji="🌙" />
+          <MealCard meal={planData.dinner_plan} title="Dinner Plan" emoji="🌙" color="#7B61FF" />
         )}
 
         {activeSection === 'snacks' && planData.snacks_recommendations && (
-          <div className="glass-card p-6 animate-fade-in-up" style={{ transform: 'none' }}>
-            <h3 className="font-semibold mb-4">🍎 Snack Recommendations</h3>
+          <div style={cardStyle} className="animate-fade-in-up">
+            <h3 className="font-semibold mb-5" style={{ color: '#FFFFFF' }}>🍎 Snack Recommendations</h3>
             <ul className="space-y-3">
               {planData.snacks_recommendations.map((snack, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
-                  <span className="w-6 h-6 rounded-full bg-[var(--color-warning)]/15 flex items-center justify-center flex-shrink-0 text-xs font-bold text-[var(--color-warning)]">
+                <li key={i} className="flex items-start gap-3 text-sm" style={{ color: '#B8C0D4' }}>
+                  <span
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '7px',
+                      background: 'rgba(245,158,11,0.12)',
+                      border: '1px solid rgba(245,158,11,0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      color: '#F59E0B',
+                    }}
+                  >
                     {i + 1}
                   </span>
                   {snack}
@@ -287,12 +358,12 @@ export default function FitnessPlanPage() {
         )}
 
         {activeSection === 'recovery' && planData.recovery_suggestions && (
-          <div className="glass-card p-6 animate-fade-in-up" style={{ transform: 'none' }}>
-            <h3 className="font-semibold mb-4">💚 Recovery Suggestions</h3>
+          <div style={cardStyle} className="animate-fade-in-up">
+            <h3 className="font-semibold mb-5" style={{ color: '#FFFFFF' }}>💚 Recovery Suggestions</h3>
             <ul className="space-y-3">
               {planData.recovery_suggestions.map((tip, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-[var(--color-text-secondary)]">
-                  <Heart size={14} className="text-[var(--color-success)] mt-0.5 flex-shrink-0" />
+                <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: '#B8C0D4' }}>
+                  <Heart size={14} style={{ color: '#22C55E', marginTop: '2px', flexShrink: 0 }} />
                   {tip}
                 </li>
               ))}
@@ -304,25 +375,33 @@ export default function FitnessPlanPage() {
       {/* Modification Modal */}
       {showModModal && modifications && (
         <div className="modal-overlay" onClick={() => setShowModModal(false)}>
-          <div className="glass-card max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-2">Review Proposed Changes</h2>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-6">{modSummary}</p>
+          <div
+            className="modal-card max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div style={{ width: '36px', height: '36px', borderRadius: '11px', background: 'linear-gradient(135deg, #5B8CFF 0%, #7B61FF 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <RefreshCw size={16} className="text-white" />
+              </div>
+              <h2 className="text-xl font-bold" style={{ color: '#FFFFFF' }}>Review Plan Changes</h2>
+            </div>
+            <p className="text-sm mb-6" style={{ color: '#B8C0D4' }}>{modSummary}</p>
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               {modifications.map((mod, i) => (
-                <div key={i} className="p-4 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-                  <h3 className="font-semibold text-sm mb-1 capitalize">{mod.section.replace(/_/g, ' ')}</h3>
-                  <p className="text-xs text-[var(--color-text-muted)] mb-3">{mod.reason}</p>
-                  <div className="grid md:grid-cols-2 gap-4">
+                <div key={i} style={{ background: 'rgba(5,8,22,0.5)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '14px', padding: '16px' }}>
+                  <h3 className="font-semibold text-sm mb-1 capitalize" style={{ color: '#FFFFFF' }}>{mod.section.replace(/_/g, ' ')}</h3>
+                  <p className="text-xs mb-3" style={{ color: '#7C849A' }}>{mod.reason}</p>
+                  <div className="grid md:grid-cols-2 gap-3">
                     <div>
-                      <span className="badge badge-danger text-xs mb-2 inline-block">Current</span>
-                      <pre className="text-xs p-3 rounded-lg overflow-auto max-h-40" style={{ background: 'var(--color-surface-light)' }}>
+                      <span className="badge badge-danger text-xs mb-2 inline-block">Current Value</span>
+                      <pre className="text-xs p-3 rounded-xl overflow-auto max-h-40 scrollbar-hide" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', color: '#B8C0D4' }}>
                         {typeof mod.current_value === 'string' ? mod.current_value : JSON.stringify(mod.current_value, null, 2)}
                       </pre>
                     </div>
                     <div>
-                      <span className="badge badge-success text-xs mb-2 inline-block">Proposed</span>
-                      <pre className="text-xs p-3 rounded-lg overflow-auto max-h-40" style={{ background: 'var(--color-surface-light)' }}>
+                      <span className="badge badge-success text-xs mb-2 inline-block">New Value</span>
+                      <pre className="text-xs p-3 rounded-xl overflow-auto max-h-40 scrollbar-hide" style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)', color: '#B8C0D4' }}>
                         {typeof mod.proposed_value === 'string' ? mod.proposed_value : JSON.stringify(mod.proposed_value, null, 2)}
                       </pre>
                     </div>
@@ -337,8 +416,7 @@ export default function FitnessPlanPage() {
                 Approve Changes
               </button>
               <button onClick={() => { setShowModModal(false); setModifications(null); }} className="btn-danger flex-1 justify-center">
-                <X size={16} />
-                Reject
+                <X size={16} /> Reject
               </button>
             </div>
           </div>
@@ -352,50 +430,75 @@ function WorkoutDayCard({ day }: { day: FitnessPlanData['weekly_workout_schedule
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="glass-card overflow-hidden" style={{ transform: 'none' }}>
+    <div
+      style={{
+        background: 'rgba(14, 20, 40, 0.6)',
+        backdropFilter: 'blur(20px)',
+        border: `1px solid ${expanded ? 'rgba(91,140,255,0.15)' : 'rgba(255,255,255,0.07)'}`,
+        borderRadius: '16px',
+        overflow: 'hidden',
+        transition: 'border-color 0.2s ease',
+      }}
+    >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-[var(--color-surface-light)]/30 transition-colors"
+        className="w-full flex items-center justify-between p-4 text-left transition-colors"
+        style={{ background: 'transparent' }}
+        onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(91,140,255,0.03)')}
+        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
       >
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${day.rest_day ? 'bg-[var(--color-success)]/15' : 'bg-[var(--color-primary)]/15'}`}>
-            {day.rest_day ? (
-              <Heart size={18} className="text-[var(--color-success)]" />
-            ) : (
-              <Dumbbell size={18} className="text-[var(--color-primary-light)]" />
-            )}
+          <div
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '11px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: day.rest_day ? 'rgba(34,197,94,0.12)' : 'rgba(91,140,255,0.12)',
+              border: `1px solid ${day.rest_day ? 'rgba(34,197,94,0.2)' : 'rgba(91,140,255,0.2)'}`,
+            }}
+          >
+            {day.rest_day
+              ? <Heart size={17} style={{ color: '#22C55E' }} />
+              : <Dumbbell size={17} style={{ color: '#7BA7FF' }} />
+            }
           </div>
           <div>
-            <h4 className="font-semibold text-sm">{day.day}</h4>
-            <p className="text-xs text-[var(--color-text-muted)]">{day.focus}</p>
+            <h4 className="font-semibold text-sm" style={{ color: '#FFFFFF' }}>{day.day}</h4>
+            <p className="text-xs" style={{ color: '#7C849A' }}>{day.focus}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {day.rest_day && <span className="badge badge-success text-xs">Rest Day</span>}
-          {!day.rest_day && <span className="text-xs text-[var(--color-text-muted)]">{day.exercises?.length || 0} exercises</span>}
-          {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {!day.rest_day && <span className="text-xs" style={{ color: '#7C849A' }}>{day.exercises?.length || 0} exercises</span>}
+          {expanded
+            ? <ChevronDown size={15} style={{ color: '#7BA7FF' }} />
+            : <ChevronRight size={15} style={{ color: '#7C849A' }} />
+          }
         </div>
       </button>
 
       {expanded && !day.rest_day && day.exercises && (
-        <div className="px-4 pb-4">
-          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '16px' }}>
+          <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: 'var(--color-surface-light)' }}>
-                  <th className="text-left p-3 text-xs font-medium text-[var(--color-text-muted)]">Exercise</th>
-                  <th className="text-center p-3 text-xs font-medium text-[var(--color-text-muted)]">Sets</th>
-                  <th className="text-center p-3 text-xs font-medium text-[var(--color-text-muted)]">Reps</th>
-                  <th className="text-left p-3 text-xs font-medium text-[var(--color-text-muted)] hidden md:table-cell">Notes</th>
+                <tr style={{ background: 'rgba(91,140,255,0.05)' }}>
+                  <th className="text-left p-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#7C849A' }}>Exercise</th>
+                  <th className="text-center p-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#7C849A' }}>Sets</th>
+                  <th className="text-center p-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#7C849A' }}>Reps</th>
+                  <th className="text-left p-3 text-xs font-semibold uppercase tracking-wide hidden md:table-cell" style={{ color: '#7C849A' }}>Notes</th>
                 </tr>
               </thead>
               <tbody>
                 {day.exercises.map((ex, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid var(--color-border)' }}>
-                    <td className="p-3 font-medium">{ex.name}</td>
-                    <td className="p-3 text-center">{ex.sets}</td>
-                    <td className="p-3 text-center">{ex.reps}</td>
-                    <td className="p-3 text-[var(--color-text-muted)] hidden md:table-cell">{ex.notes || '—'}</td>
+                  <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td className="p-3 font-medium text-sm" style={{ color: '#FFFFFF' }}>{ex.name}</td>
+                    <td className="p-3 text-center text-sm" style={{ color: '#7BA7FF' }}>{ex.sets}</td>
+                    <td className="p-3 text-center text-sm" style={{ color: '#B8C0D4' }}>{ex.reps}</td>
+                    <td className="p-3 text-sm hidden md:table-cell" style={{ color: '#7C849A' }}>{ex.notes || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -407,38 +510,50 @@ function WorkoutDayCard({ day }: { day: FitnessPlanData['weekly_workout_schedule
   );
 }
 
-function MealCard({ meal, title, emoji }: { meal: FitnessPlanData['breakfast_plan']; title: string; emoji: string }) {
+function MealCard({ meal, title, emoji, color }: { meal: FitnessPlanData['breakfast_plan']; title: string; emoji: string; color: string }) {
   return (
-    <div className="glass-card p-6 animate-fade-in-up" style={{ transform: 'none' }}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold">{emoji} {title}</h3>
-        <span className="badge badge-primary">{meal.total_calories} kcal</span>
-      </div>
-      <p className="text-sm text-[var(--color-text-secondary)] mb-4">{meal.description}</p>
-      {meal.items && (
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ background: 'var(--color-surface-light)' }}>
-                <th className="text-left p-3 text-xs font-medium text-[var(--color-text-muted)]">Item</th>
-                <th className="text-center p-3 text-xs font-medium text-[var(--color-text-muted)]">Portion</th>
-                <th className="text-center p-3 text-xs font-medium text-[var(--color-text-muted)]">Calories</th>
-                <th className="text-center p-3 text-xs font-medium text-[var(--color-text-muted)] hidden md:table-cell">Protein</th>
-              </tr>
-            </thead>
-            <tbody>
-              {meal.items.map((item, i) => (
-                <tr key={i} style={{ borderTop: '1px solid var(--color-border)' }}>
-                  <td className="p-3 font-medium">{item.name}</td>
-                  <td className="p-3 text-center text-[var(--color-text-muted)]">{item.portion}</td>
-                  <td className="p-3 text-center">{item.calories}</td>
-                  <td className="p-3 text-center text-[var(--color-text-muted)] hidden md:table-cell">{item.protein_g ? `${item.protein_g}g` : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div
+      style={{
+        background: 'rgba(14, 20, 40, 0.6)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: '20px',
+        overflow: 'hidden',
+      }}
+      className="animate-fade-in-up"
+    >
+      <div style={{ height: '3px', background: `linear-gradient(90deg, ${color}, transparent)` }} />
+      <div style={{ padding: '24px' }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-lg" style={{ color: '#FFFFFF' }}>{emoji} {title}</h3>
+          <span className="badge badge-primary">{meal.total_calories} kcal</span>
         </div>
-      )}
+        <p className="text-sm leading-relaxed mb-5" style={{ color: '#B8C0D4' }}>{meal.description}</p>
+        {meal.items && (
+          <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                  <th className="text-left p-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#7C849A' }}>Item</th>
+                  <th className="text-center p-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#7C849A' }}>Portion</th>
+                  <th className="text-center p-3 text-xs font-semibold uppercase tracking-wide" style={{ color: '#7C849A' }}>Cal</th>
+                  <th className="text-center p-3 text-xs font-semibold uppercase tracking-wide hidden md:table-cell" style={{ color: '#7C849A' }}>Protein</th>
+                </tr>
+              </thead>
+              <tbody>
+                {meal.items.map((item, i) => (
+                  <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td className="p-3 font-medium" style={{ color: '#FFFFFF' }}>{item.name}</td>
+                    <td className="p-3 text-center" style={{ color: '#B8C0D4' }}>{item.portion}</td>
+                    <td className="p-3 text-center" style={{ color: '#7BA7FF' }}>{item.calories}</td>
+                    <td className="p-3 text-center hidden md:table-cell" style={{ color: '#7C849A' }}>{item.protein_g ? `${item.protein_g}g` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

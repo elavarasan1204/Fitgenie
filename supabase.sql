@@ -103,68 +103,83 @@ ALTER TABLE chat_history ENABLE ROW LEVEL SECURITY;
 -- ============================================================
 
 -- PROFILES policies
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
 CREATE POLICY "Users can view their own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 CREATE POLICY "Users can insert their own profile"
   ON profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 CREATE POLICY "Users can update their own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can delete their own profile" ON profiles;
 CREATE POLICY "Users can delete their own profile"
   ON profiles FOR DELETE
   USING (auth.uid() = id);
 
 -- FITNESS PLANS policies
+DROP POLICY IF EXISTS "Users can view their own fitness plans" ON fitness_plans;
 CREATE POLICY "Users can view their own fitness plans"
   ON fitness_plans FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own fitness plans" ON fitness_plans;
 CREATE POLICY "Users can insert their own fitness plans"
   ON fitness_plans FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own fitness plans" ON fitness_plans;
 CREATE POLICY "Users can update their own fitness plans"
   ON fitness_plans FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own fitness plans" ON fitness_plans;
 CREATE POLICY "Users can delete their own fitness plans"
   ON fitness_plans FOR DELETE
   USING (auth.uid() = user_id);
 
 -- PROGRESS LOGS policies
+DROP POLICY IF EXISTS "Users can view their own progress logs" ON progress_logs;
 CREATE POLICY "Users can view their own progress logs"
   ON progress_logs FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own progress logs" ON progress_logs;
 CREATE POLICY "Users can insert their own progress logs"
   ON progress_logs FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own progress logs" ON progress_logs;
 CREATE POLICY "Users can update their own progress logs"
   ON progress_logs FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own progress logs" ON progress_logs;
 CREATE POLICY "Users can delete their own progress logs"
   ON progress_logs FOR DELETE
   USING (auth.uid() = user_id);
 
 -- CHAT HISTORY policies
+DROP POLICY IF EXISTS "Users can view their own chat history" ON chat_history;
 CREATE POLICY "Users can view their own chat history"
   ON chat_history FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own chat messages" ON chat_history;
 CREATE POLICY "Users can insert their own chat messages"
   ON chat_history FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own chat history" ON chat_history;
 CREATE POLICY "Users can delete their own chat history"
   ON chat_history FOR DELETE
   USING (auth.uid() = user_id);
@@ -181,12 +196,14 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply auto-update trigger to profiles
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 -- Apply auto-update trigger to fitness_plans
+DROP TRIGGER IF EXISTS update_fitness_plans_updated_at ON fitness_plans;
 CREATE TRIGGER update_fitness_plans_updated_at
   BEFORE UPDATE ON fitness_plans
   FOR EACH ROW
@@ -198,7 +215,7 @@ CREATE TRIGGER update_fitness_plans_updated_at
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO profiles (id, full_name)
+  INSERT INTO public.profiles (id, full_name)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', '')
@@ -208,6 +225,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger to auto-create profile when a new user signs up
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
